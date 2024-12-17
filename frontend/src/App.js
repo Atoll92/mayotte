@@ -81,20 +81,23 @@ function App() {
   // Prepare network coverage for visualization
   const coverageData = React.useMemo(() => ({
     type: 'FeatureCollection',
-    features: networkCoverage.map(area => ({
-        type: 'Feature',
-        geometry: {
-            type: 'Point',
-            coordinates: area.coordinates
-        },
-        properties: {
-            network: area.network,
-            rangeCount: area.rangeCount,
-            status: area.status,
-            onlineCount: area.onlineCount
-        }
-    }))
+    features: networkCoverage
+        .filter(area => area.coordinates) // Ensure coordinates exist
+        .map(area => ({
+            type: 'Feature',
+            geometry: {
+                type: 'Point',
+                coordinates: [area.coordinates[1], area.coordinates[0]] // GeoJSON expects [lon, lat]
+            },
+            properties: {
+                network: area.network,
+                rangeCount: area.rangeCount,
+                status: area.status,
+                onlineCount: area.onlineCount
+            }
+        }))
 }), [networkCoverage]);
+
 
   return (
     <>
