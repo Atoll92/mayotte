@@ -10,8 +10,8 @@ function App() {
   const [antennas, setAntennas] = useState([]);
   const [networkCoverage, setNetworkCoverage] = useState([]);
   const [selectedMarker, setSelectedMarker] = useState(null);
-  const [showAntennas, setShowAntennas] = useState(true);
-  const [showCoverage, setShowCoverage] = useState(false);
+  const [showAntennas, setShowAntennas] = useState(false);
+  const [showCoverage, setShowCoverage] = useState(true);
   const [viewState, setViewState] = useState({
     latitude: -12.8275,
     longitude: 45.1662,
@@ -110,31 +110,42 @@ function App() {
             {/* Network Coverage Layer */}
             {showCoverage && (
             
-              <Source type="geojson" data={coverageData}>
-                  <Layer
-                      id="network-coverage"
-                      type="circle"
-                      paint={{
-                          'circle-radius': [
-                              'interpolate',
-                              ['linear'],
-                              ['get', 'rangeCount'],
-                              1, 10,
-                              50, 30
-                          ],
-                          'circle-color': [
-                              'match',
-                              ['get', 'status'],
-                              'online', '#4CAF50',
-                              'offline', '#f44336',
-                              '#FFA726'  // default color
-                          ],
-                          'circle-opacity': 0.6,
-                          'circle-stroke-width': 2,
-                          'circle-stroke-color': '#ffffff'
-                      }}
-                  />
-              </Source>
+            <Source type="geojson" data={coverageData}>
+            <Layer
+              id="network-coverage"
+              type="circle"
+              paint={{
+                'circle-radius': [
+                  'interpolate',
+                  ['linear'],
+                  ['get', 'rangeCount'],
+                  1, 10,
+                  50, 30
+                ],
+                'circle-color': [
+                  'match',
+                  ['get', 'status'],
+                  'online', '#4CAF50',
+                  'offline', '#f44336',
+                  '#FFA726'  // default color
+                ],
+                'circle-opacity': 0.6,
+                'circle-stroke-width': 2,
+                'circle-stroke-color': '#ffffff'
+              }}
+              onClick={(e) => {
+                if (e.features.length > 0) {
+                  const feature = e.features[0];
+                  setSelectedMarker({
+                    ...feature.properties,
+                    coordinates: feature.geometry.coordinates,
+                    type: 'coverage'
+                  });
+                }
+              }}
+              interactive={true}
+            />
+          </Source>
           )}
           
             
@@ -195,34 +206,57 @@ function App() {
 
             {/* Popup for markers */}
             {selectedMarker && (
-              <Popup
-                longitude={selectedMarker.type === 'region' ? selectedMarker.coordinates[0] : selectedMarker.lon}
-                latitude={selectedMarker.type === 'region' ? selectedMarker.coordinates[1] : selectedMarker.lat}
-                anchor="top"
-                onClose={() => setSelectedMarker(null)}
-              >
-                <div className="popup-content">
-                  {selectedMarker.type === 'region' ? (
-                    <>
-                      <h3>{selectedMarker.name}</h3>
-                      <p>Status: <span className={`status ${selectedMarker.status}`}>
-                        {selectedMarker.status.toUpperCase()}
-                      </span></p>
-                      <p>Connectivity: {selectedMarker.connectivity.toFixed(1)}%</p>
-                      <p>Last Updated: {new Date(selectedMarker.lastChecked).toLocaleTimeString()}</p>
-                    </>
-                  ) : (
-                    <>
-                      <h3>Antenne GSM</h3>
-                      <p>Type: {selectedMarker.type}</p>
-                      <p>Opérateur: {selectedMarker.operator}</p>
-                      <p>Portée: {selectedMarker.range}m</p>
-                      <p>Dernière mise à jour: {new Date(selectedMarker.lastUpdate).toLocaleDateString()}</p>
-                    </>
-                  )}
-                </div>
-              </Popup>
-            )}
+  <Popup
+    longitude={
+      selectedMarker.type === 'region' 
+        ? selectedMarker.coordinates[0] 
+        : selectedMarker.type === 'antenna'
+        ? selectedMarker.lon
+        : selectedMarker.coordinates[0]
+    }
+    latitude={
+      selectedMarker.type === 'region' 
+        ? selectedMarker.coordinates[1] 
+        : selectedMarker.type === 'antenna'
+        ? selectedMarker.lat
+        : selectedMarker.coordinates[1]
+    }
+    anchor="top"
+    onClose={() => setSelectedMarker(null)}
+  >
+    <div className="popup-content">
+      {selectedMarker.type === 'region' ? (
+        <>
+          <h3>{selectedMarker.name}</h3>
+          <p>Status: <span className={`status ${selectedMarker.status}`}>
+            {selectedMarker.status.toUpperCase()}
+          </span></p>
+          <p>Connectivity: {selectedMarker.connectivity.toFixed(1)}%</p>
+          <p>Last Updated: {new Date(selectedMarker.lastChecked).toLocaleTimeString()}</p>
+        </>
+      ) : selectedMarker.type === 'antenna' ? (
+        <>
+          <h3>Antenne GSM</h3>
+          <p>Type: {selectedMarker.type}</p>
+          <p>Opérateur: {selectedMarker.operator}</p>
+          <p>Portée: {selectedMarker.range}m</p>
+          <p>Dernière mise à jour: {new Date(selectedMarker.lastUpdate).toLocaleDateString()}</p>
+        </>
+      ) : (
+        <>
+          <h3>Zone IP: {selectedMarker.network}</h3>
+          <p>Status: <span className={`status ${selectedMarker.status}`}>
+            {selectedMarker.status.toUpperCase()}
+          </span></p>
+          <p>Nombre de plages IP: {selectedMarker.rangeCount}</p>
+          <p>IPs en ligne: {selectedMarker.onlineCount || 0}</p>
+          <p>IPs hors ligne: {selectedMarker.rangeCount - (selectedMarker.onlineCount || 0)}</p>
+        </>
+      )}
+    </div>
+  </Popup>
+)}
+
 
             {/* Layer Controls */}
             <div className="map-controls">
@@ -256,7 +290,7 @@ function App() {
             <li><span style={{ color: '#4CAF50' }}>Vert</span> : Réseau en ligne</li>
             <li><span style={{ color: '#f44336' }}>Rouge</span> : Réseau hors ligne</li>
             <li><span style={{ color: '#FFA726' }}>Orange</span> : Antenne GSM</li>
-            <li><span style={{ color: '#2196F3' }}>Bleu</span> : Zone de couverture IP</li>
+            {/* <li><span style={{ color: '#2196F3' }}>Bleu</span> : Zone de couverture IP</li> */}
           </ul>
           <p>
             Cliquez sur un marqueur pour afficher plus de détails sur la région ou l'antenne.
@@ -268,6 +302,7 @@ function App() {
     <p>Plages IP: {networkCoverage.reduce((sum, area) => sum + area.rangeCount, 0)}</p>
     <p>Réseaux en ligne: {networkCoverage.filter(area => area.status === 'online').length}</p>
     <p>Réseaux hors ligne: {networkCoverage.filter(area => area.status === 'offline').length}</p>
+    <p>*En attentes de données GSM</p>
 </div>
         </div>
       </div>

@@ -130,12 +130,12 @@
 }
 
 /* Ensure the map's debug overlay remains visible */
-.debug-overlay {
+/* .debug-overlay {
   top: 10px;
   right: 10px;
   left: auto;
   background: rgba(0, 0, 0, 0.7);
-}
+} */
 
 /* App.css - Add these styles */
 .antenna-marker {
