@@ -74,6 +74,9 @@ app.get('/api/status', (req, res) => {
     res.json(status);
 });
 
+// 
+
+
 // Initialize and start server
 initializeMonitoring().then(() => {
     app.listen(port, () => {
