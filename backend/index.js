@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 const { loadIPRanges } = require('./utils/csvReader');
 const NetworkMonitor = require('./utils/networkMonitor');
+const { loadAntennas } = require('./utils/antennaProcessor');
+const { loadFirewallRanges } = require('./utils/ipRangeProcessor');
 
 const app = express();
 
@@ -83,4 +85,33 @@ initializeMonitoring().then(() => {
         console.log(`Server running on port ${port}`);
         console.log('Access status at: http://localhost:${port}/api/status');
     });
+});
+
+app.get('/api/antennas', async (req, res) => {
+    try {
+        const antennas = await loadAntennas();
+        res.json(antennas);
+    } catch (error) {
+        console.error('Error fetching antennas:', error);
+        res.status(500).json({ error: 'Failed to fetch antenna data' });
+    }
+});
+
+app.get('/api/network-coverage', async (req, res) => {
+    console.log('Network coverage request received');
+    try {
+        const { ranges, networkAreas } = await loadFirewallRanges();
+        console.log('Sending response with:', {
+            totalRanges: ranges.length,
+            totalAreas: networkAreas.length
+        });
+        res.json({
+            timestamp: new Date().toISOString(),
+            totalRanges: ranges.length,
+            networkAreas: networkAreas
+        });
+    } catch (error) {
+        console.error('Error serving network coverage:', error);
+        res.status(500).json({ error: 'Failed to load network coverage data' });
+    }
 });

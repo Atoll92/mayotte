@@ -136,3 +136,50 @@
   left: auto;
   background: rgba(0, 0, 0, 0.7);
 }
+
+/* App.css - Add these styles */
+.antenna-marker {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.antenna-marker:hover {
+  transform: scale(1.2);
+}
+
+.antenna-icon {
+  color: #FFA726;
+  filter: drop-shadow(0 0 4px rgba(255, 167, 38, 0.5));
+}
+
+.map-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px;
+  border-radius: 4px;
+  z-index: 1;
+}
+
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: 1px solid #ffffff50;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.layer-toggle:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.layer-toggle.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+}
