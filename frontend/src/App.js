@@ -314,12 +314,7 @@ function App() {
           </p>
           <div className="network-stats">
     <h3>Statistiques Réseau</h3>
-    <p>IPs vérifiées: {regions.reduce((total, region) => 
-        total + (region.totalIPsChecked || 0), 0
-    )}</p>
-    <p>IPs en ligne: {regions.reduce((total, region) => 
-        total + (region.respondingIPs || 0), 0
-    )}</p>
+
     <p>Régions en ligne: {regions.filter(region => region.status === 'online').length}</p>
     <p>Régions hors ligne: {regions.filter(region => region.status === 'offline').length}</p>
     <p>*En attente de données GSM</p>
