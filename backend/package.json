@@ -17,7 +17,6 @@
     "csv-parser": "^3.0.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "nodemon": "^3.1.9",
-    "ping": "^0.4.4"
+    "nodemon": "^3.1.9"
   }
 }

@@ -4,7 +4,8 @@ const path = require('path');
 
 async function loadIPRanges() {
     try {
-        const data = await fs.readFile(path.join(__dirname, '..', 'data', 'monitoring-ranges.csv'), 'utf8');
+        // Update the file name to monitoring-ranges-v2.csv
+        const data = await fs.readFile(path.join(__dirname, '..', 'data', 'monitoring-ranges-v2.csv'), 'utf8');
         const lines = data.split('\n').slice(1); // Skip header
         
         // Group by city
@@ -12,7 +13,8 @@ async function loadIPRanges() {
         
         lines.forEach(line => {
             if (!line.trim()) return;
-            const [startIP, endIP, city, longitude, latitude] = line.split(',');
+            // Add the new numeric IP columns to the destructuring
+            const [startIP, endIP, city, longitude, latitude, startIPNum, endIPNum] = line.split(',');
             
             if (!cityMap.has(city)) {
                 cityMap.set(city, {
@@ -24,7 +26,10 @@ async function loadIPRanges() {
             
             cityMap.get(city).ranges.push({
                 start: startIP,
-                end: endIP
+                end: endIP,
+                // Add the numeric representations
+                startNum: parseInt(startIPNum),
+                endNum: parseInt(endIPNum)
             });
         });
         

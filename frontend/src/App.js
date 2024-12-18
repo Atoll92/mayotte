@@ -55,28 +55,28 @@ function App() {
   }, [API_URL]);
 
   // Fetch network coverage data
-  useEffect(() => {
-    const fetchNetworkCoverage = async () => {
-        console.log('Fetching network coverage...');
-        try {
-            const response = await fetch(`${API_URL}/api/network-coverage`);
-            console.log('Network coverage response status:', response.status);
-            const data = await response.json();
-            console.log('Network coverage data received:', data);
+//   useEffect(() => {
+//     const fetchNetworkCoverage = async () => {
+//         console.log('Fetching network coverage...');
+//         try {
+//             const response = await fetch(`${API_URL}/api/network-coverage`);
+//             console.log('Network coverage response status:', response.status);
+//             const data = await response.json();
+//             console.log('Network coverage data received:', data);
             
-            if (data.networkAreas && data.networkAreas.length > 0) {
-                console.log('Sample network area:', data.networkAreas[0]);
-                setNetworkCoverage(data.networkAreas);
-            } else {
-                console.warn('No network areas received');
-            }
-        } catch (error) {
-            console.error('Error fetching network coverage:', error);
-        }
-    };
+//             if (data.networkAreas && data.networkAreas.length > 0) {
+//                 console.log('Sample network area:', data.networkAreas[0]);
+//                 setNetworkCoverage(data.networkAreas);
+//             } else {
+//                 console.warn('No network areas received');
+//             }
+//         } catch (error) {
+//             console.error('Error fetching network coverage:', error);
+//         }
+//     };
 
-    fetchNetworkCoverage();
-}, [API_URL]);
+//     fetchNetworkCoverage();
+// }, [API_URL]);
 
   // Prepare network coverage for visualization
   const coverageData = React.useMemo(() => ({
@@ -254,6 +254,19 @@ function App() {
           <p>Nombre de plages IP: {selectedMarker.rangeCount}</p>
           <p>IPs en ligne: {selectedMarker.onlineCount || 0}</p>
           <p>IPs hors ligne: {selectedMarker.rangeCount - (selectedMarker.onlineCount || 0)}</p>
+
+          <h3>Statistiques IP</h3>
+    <p>IPs vérifiées: {regions.reduce((total, region) => {
+        // Get total checked IPs from connectivity data
+        const checkedCount = Math.round((100 / region.connectivity) * region.connectivity) || 0;
+        return total + checkedCount;
+    }, 0)}</p>
+    <p>IPs en ligne: {regions.reduce((total, region) => {
+        // Calculate responding IPs based on connectivity percentage
+        const checkedCount = Math.round((100 / region.connectivity) * region.connectivity) || 0;
+        const respondingCount = Math.round((region.connectivity / 100) * checkedCount) || 0;
+        return total + respondingCount;
+    }, 0)}</p>
         </>
       )}
     </div>
@@ -278,7 +291,7 @@ function App() {
             </div>
 
             <div className="debug-overlay">
-              {regions.length} regions, {antennas.length} antennes, {networkCoverage.length} zones IP
+              {regions.length} regions, {antennas.length} antennes
             </div>
           </Map>
         </div>
@@ -299,14 +312,20 @@ function App() {
             Cliquez sur un marqueur pour afficher plus de détails sur la région ou l'antenne.
             Les données réseau sont actualisées toutes les 30 secondes.
           </p>
-          <b>Solidarité avec tous les habitants de Mayotte</b>
           <div className="network-stats">
     <h3>Statistiques Réseau</h3>
-    <p>Plages IP: {networkCoverage.reduce((sum, area) => sum + area.rangeCount, 0)}</p>
-    <p>Réseaux en ligne: {networkCoverage.filter(area => area.status === 'online').length}</p>
-    <p>Réseaux hors ligne: {networkCoverage.filter(area => area.status === 'offline').length}</p>
-    <p>*En attentes de données GSM</p>
+    <p>IPs vérifiées: {regions.reduce((total, region) => 
+        total + (region.totalIPsChecked || 0), 0
+    )}</p>
+    <p>IPs en ligne: {regions.reduce((total, region) => 
+        total + (region.respondingIPs || 0), 0
+    )}</p>
+    <p>Régions en ligne: {regions.filter(region => region.status === 'online').length}</p>
+    <p>Régions hors ligne: {regions.filter(region => region.status === 'offline').length}</p>
+    <p>*En attente de données GSM</p>
 </div>
+<b>Solidarité avec tous les habitants de Mayotte</b>
+
         </div>
       </div>
       <Analytics />

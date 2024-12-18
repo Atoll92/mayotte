@@ -13,78 +13,40 @@ const app = express();
 app.use(cors({
     origin: '*',
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'Accept', 'Accept-Version', 'Content-Length', 'Content-MD5', 'Content-Type', 'Date', 'X-Api-Version'],
     credentials: true
 }));
 
 app.use(express.json());
 
-const port = process.env.PORT || 5001;
 let monitor = null;
-
-// Explicitly handle CORS preflight requests
-app.options('*', (req, res) => {
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, POST, OPTIONS, PATCH, DELETE, PUT"
-    );
-    res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization"
-    );
-    res.status(200).end();
-});
 
 // Initialize monitoring
 async function initializeMonitoring() {
     try {
-        const regions = await loadIPRanges();
-        monitor = new NetworkMonitor(regions);
-        
-        // Initial monitoring
-        await monitor.monitorAll();
-        console.log('Initial monitoring completed');
-        
-        // Update every 5 minutes
-        setInterval(async () => {
-            const updates = await monitor.monitorAll();
-            console.log(`Updated ${updates.length} regions:`, new Date().toISOString());
-        }, 300000);
+        if (!monitor) {
+            const regions = await loadIPRanges();
+            monitor = new NetworkMonitor(regions);
+            await monitor.monitorAll();
+            console.log('Initial monitoring completed');
+        }
+        return monitor;
     } catch (error) {
         console.error('Failed to initialize monitoring:', error);
+        throw error;
     }
 }
 
 // API endpoint for status
-app.get('/api/status', (req, res) => {
-    // Add CORS headers for this endpoint
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader(
-        "Access-Control-Allow-Methods",
-        "GET, OPTIONS, PATCH, DELETE, POST, PUT"
-    );
-    res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, Authorization"
-    );
-
-    if (!monitor) {
-        return res.status(503).json({ error: 'Monitoring system initializing' });
+app.get('/api/status', async (req, res) => {
+    try {
+        const monitor = await initializeMonitoring();
+        const status = monitor.getCurrentStatus();
+        res.json(status);
+    } catch (error) {
+        console.error('Error in status endpoint:', error);
+        res.status(503).json({ error: 'Monitoring system error' });
     }
-    const status = monitor.getCurrentStatus();
-    res.json(status);
-});
-
-// 
-
-
-// Initialize and start server
-initializeMonitoring().then(() => {
-    app.listen(port, () => {
-        console.log(`Server running on port ${port}`);
-        console.log('Access status at: http://localhost:${port}/api/status');
-    });
 });
 
 app.get('/api/antennas', async (req, res) => {
@@ -97,21 +59,36 @@ app.get('/api/antennas', async (req, res) => {
     }
 });
 
-app.get('/api/network-coverage', async (req, res) => {
-    console.log('Network coverage request received');
-    try {
-        const { ranges, networkAreas } = await loadFirewallRanges();
-        console.log('Sending response with:', {
-            totalRanges: ranges.length,
-            totalAreas: networkAreas.length
-        });
-        res.json({
-            timestamp: new Date().toISOString(),
-            totalRanges: ranges.length,
-            networkAreas: networkAreas
-        });
-    } catch (error) {
-        console.error('Error serving network coverage:', error);
-        res.status(500).json({ error: 'Failed to load network coverage data' });
-    }
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Something broke!' });
+});
+
+// Handle both Vercel and local development
+if (process.env.VERCEL) {
+    console.log('Running in Vercel environment');
+    module.exports = app;
+} else {
+    const port = process.env.PORT || 5001;
+    app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+        console.log(`Access status at: http://localhost:${port}/api/status`);
+        // Start periodic updates only in local environment
+        setInterval(async () => {
+            if (monitor) {
+                const updates = await monitor.monitorAll();
+                console.log(`Updated ${updates.length} regions:`, new Date().toISOString());
+            }
+        }, 300000);
+    });
+}
+
+// Global error handlers
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', reason);
+});
+
+process.on('uncaughtException', (error) => {
+    console.error('Uncaught Exception:', error);
 });
