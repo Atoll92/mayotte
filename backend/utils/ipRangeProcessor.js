@@ -22,7 +22,7 @@ async function getCoordinates(ip) {
                 return null;
             }
         } catch (error) {
-            if (error.response?.status === 429 && i < attempts - 1) {
+            if (error.response.status === 429 && i < attempts - 1) {
                 console.warn(`Rate limited for ${ip}. Retrying in ${delay}ms...`);
                 await new Promise(resolve => setTimeout(resolve, delay));
                 delay *= 2; // Exponential backoff
